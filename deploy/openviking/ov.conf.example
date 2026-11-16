@@ -1,0 +1,29 @@
+{
+  "service_name": "penr-openviking",
+  "server": {
+    "host": "0.0.0.0",
+    "port": 1933,
+    "root_api_key": "penr-dev-root-key-change-me",
+    "cors_origins": ["*"]
+  },
+  "storage": {
+    "workspace": "./data",
+    "agfs": { "backend": "local" },
+    "vectordb": { "backend": "local", "name": "penr" }
+  },
+  "embedding": {
+    "dense": {
+      "provider": "openai",
+      "api_base": "https://api.openai.com/v1",
+      "api_key": "REPLACE_ME_EMBEDDING_KEY",
+      "model": "text-embedding-3-small",
+      "dimension": 1536
+    }
+  },
+  "vlm": {
+    "provider": "openai",
+    "api_base": "https://api.openai.com/v1",
+    "api_key": "REPLACE_ME_VLM_KEY",
+    "model": "gpt-4o-mini"
+  }
+}

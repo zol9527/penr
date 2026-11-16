@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.venv/
+uv.lock.bak
+
+# Runtime / secrets / privacy
+data/
+.env
+.env.*
+!.env.example
+!web/.env.production
+config.json
+*.key
+*.pem
+*.docx
+*.sqlite
+*.sqlite3
+*.log
+
+# Local tool state (peer / IDE agent)
+.openviking/
+.serena/memories/
+.serena/cache/
+.serena/project.local.yml
+
+# Next.js frontend (web/)
+web/node_modules/
+web/.next/
+web/out/
+web/.env*.local
+web/*.tsbuildinfo
+web/next-env.d.ts
+
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*~

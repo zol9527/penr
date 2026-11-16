@@ -1,0 +1,80 @@
+name: penr
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-antifox}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-antifox}
+      POSTGRES_DB: ${POSTGRES_DB:-antifox}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-antifox} -d ${POSTGRES_DB:-antifox}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  # 本仓内置 OpenViking：长期知识库（与个人 viking.0xyz.dev 隔离）
+  openviking:
+    image: ${OPENVIKING_IMAGE:-ghcr.io/volcengine/openviking:latest}
+    command: ["--without-bot"]
+    environment:
+      OPENVIKING_ROOT_API_KEY: ${OPENVIKING_ROOT_API_KEY:-penr-dev-root-key-change-me}
+      OPENVIKING_CONF_CONTENT: ${OPENVIKING_CONF_CONTENT:-}
+    ports:
+      - "1933:1933"
+    volumes:
+      - ./data/openviking:/app/.openviking
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://127.0.0.1:1933/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    restart: unless-stopped
+
+  penr:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+      openviking:
+        condition: service_started
+    environment:
+      ANTIFOX_PG_DSN: postgres://${POSTGRES_USER:-antifox}:${POSTGRES_PASSWORD:-antifox}@postgres:5432/${POSTGRES_DB:-antifox}?sslmode=disable
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTIFOX_LLM_PROVIDER: ${ANTIFOX_LLM_PROVIDER:-}
+      ANTIFOX_LLM_MODEL: ${ANTIFOX_LLM_MODEL:-}
+      ANTIFOX_LLM_BASE_URL: ${ANTIFOX_LLM_BASE_URL:-}
+      ANTIFOX_HOST: 0.0.0.0
+      ANTIFOX_PORT: 8787
+      ANTIFOX_TRAFFIC_PROXY: mitmproxy:8080
+      OPENVIKING_ENABLED: "true"
+      OPENVIKING_URL: http://openviking:1933
+      OPENVIKING_API_KEY: ${OPENVIKING_API_KEY:-${OPENVIKING_ROOT_API_KEY:-penr-dev-root-key-change-me}}
+      OPENVIKING_ROOT_API_KEY: ${OPENVIKING_ROOT_API_KEY:-penr-dev-root-key-change-me}
+      OPENVIKING_AUTO_PROMOTE: ${OPENVIKING_AUTO_PROMOTE:-true}
+    ports:
+      - "8787:8787"
+    volumes:
+      - ./data:/app/data
+      - ./skills:/app/skills
+    restart: unless-stopped
+
+  mitmproxy:
+    image: mitmproxy/mitmproxy:10.4.2
+    command: ["mitmdump", "-s", "/addon/addon.py", "-p", "8080", "--set", "block_global=false"]
+    ports:
+      - "8788:8080"
+    volumes:
+      - ./src/penr/traffic/addon.py:/addon/addon.py:ro
+      - ./data/traffic:/home/mitmproxy/.mitmproxy
+    restart: unless-stopped
+
+volumes:
+  pgdata:
